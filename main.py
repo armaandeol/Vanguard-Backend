@@ -3,9 +3,15 @@ from app import config  # noqa: F401  (loads .env before other modules read it)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.risk_pipeline import ensure_knowledge_base_ready
 from app.routers import github, repos, users
 
 app = FastAPI(title="DeployIQ API")
+
+
+@app.on_event("startup")
+async def _ensure_rag_knowledge_base() -> None:
+    ensure_knowledge_base_ready()
 
 app.add_middleware(
     CORSMiddleware,

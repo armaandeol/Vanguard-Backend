@@ -99,7 +99,38 @@ async def repo_pull_requests(repo_full_name: str, decoded_token: dict = Depends(
     )
     pull_requests = [doc.to_dict() for doc in docs]
     pull_requests.sort(key=lambda pr: pr.get("createdAt") or "", reverse=True)
+
+    # Merge in a risk badge (if a Vanguard analysis exists yet) so the list view
+    # doesn't need a separate round trip per PR.
+    risk_docs = (
+        db.collection("risk_reports")
+        .where(filter=FieldFilter("repo", "==", repo_full_name))
+        .stream()
+    )
+    risk_by_pr = {}
+    for doc in risk_docs:
+        data = doc.to_dict()
+        risk_by_pr[data.get("prNumber")] = data
+
+    for pr in pull_requests:
+        risk = risk_by_pr.get(pr.get("prNumber"))
+        if risk:
+            pr["riskStatus"] = risk.get("status")
+            pr["deploymentRisk"] = risk.get("deploymentRisk")
+            pr["bugProbability"] = risk.get("bugProbability")
+
     return pull_requests
+
+
+@router.get("/repos/{repo_full_name:path}/pull_requests/{pr_number}/risk_report")
+async def pr_risk_report(repo_full_name: str, pr_number: int, decoded_token: dict = Depends(get_current_user)):
+    installation_ids = _user_installation_ids(decoded_token["uid"])
+    _get_owned_repo(repo_full_name, installation_ids)
+
+    doc = db.collection("risk_reports").document(f"{sanitize_doc_id(repo_full_name)}_{pr_number}").get()
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Risk report not found for this pull request")
+    return doc.to_dict()
 
 
 @router.get("/repos/{repo_full_name:path}/branches")

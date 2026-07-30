@@ -14,6 +14,7 @@ from app.auth import get_current_user
 from app.firebase import db
 from app.github.auth import get_installation_token
 from app.github.client import list_installation_repositories, list_repo_commits, list_repo_pulls
+from app.risk_pipeline import run_risk_pipeline_for_pr
 from app.utils import sanitize_doc_id
 
 logger = logging.getLogger("deployiq.github")
@@ -127,6 +128,11 @@ async def github_webhook(
             event="pull_request",
         )
         _store_pull_request(pr=pr, repo=repo_full_name)
+
+        if payload.get("action") in ("opened", "reopened", "synchronize"):
+            installation_id = str(payload.get("installation", {}).get("id", ""))
+            if installation_id and repo_full_name:
+                background_tasks.add_task(run_risk_pipeline_for_pr, installation_id, repo_full_name, pr)
     elif x_github_event == "installation" and payload.get("action") == "deleted":
         installation_id = str(payload.get("installation", {}).get("id", ""))
         if installation_id:
