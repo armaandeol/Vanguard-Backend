@@ -1,131 +1,128 @@
-🚀 VanGuard - AI-Powered Pull Request Risk Analysis Platform
+# DeployIQ Backend
 
-VanGuard is an intelligent DevOps platform that predicts deployment risk for GitHub Pull Requests using Machine Learning, Retrieval-Augmented Generation (RAG), and LLM-powered analysis. It helps engineering teams identify high-risk code changes before deployment by combining historical commit intelligence, repository knowledge, and predictive models.
+DeployIQ is an AI-powered pull request risk analysis backend. It predicts deployment risk for GitHub pull requests using machine learning, retrieval-augmented generation (RAG), and LLM-powered explanations. The backend helps engineering teams identify risky code changes before deployment by combining pull request metadata, repository knowledge, and predictive models.
 
-⸻
+---
 
-✨ Features
+## Features
 
-🔍 Pull Request Risk Detection
+### Pull Request Risk Detection
 
-* Analyze GitHub Pull Requests automatically
-* Extract commit metadata, file changes, patch diffs, authors, branches, and repository context
-* Detect risky code changes before deployment
+* Analyze GitHub pull requests automatically.
+* Extract commit metadata, file changes, patch diffs, authors, branches, and repository context.
+* Detect risky code changes before deployment.
 
-🤖 Machine Learning Risk Scoring
+### Machine Learning Risk Scoring
 
-* XGBoost-based deployment risk prediction
-* Probability calibration for reliable confidence scores
-* Feature engineering from repository activity
-* Explainable risk metrics
+* XGBoost-based deployment risk prediction.
+* Probability calibration for reliable confidence scores.
+* Feature engineering from repository activity.
+* Explainable risk metrics.
 
-📚 Retrieval-Augmented Generation (RAG)
+### Retrieval-Augmented Generation
 
-* Repository-aware knowledge retrieval
-* Documentation and historical context ingestion
-* Intelligent retrieval for deployment reasoning
-* Semantic search over project knowledge
+* Repository-aware knowledge retrieval.
+* Documentation and historical context ingestion.
+* Semantic search over project knowledge.
+* LLM-generated deployment risk explanations.
 
-⚡ FastAPI Backend
+### FastAPI Backend
 
-* RESTful API architecture
-* Modular routing
-* Authentication support
-* GitHub integration
-* Repository management APIs
+* RESTful API architecture.
+* Modular routers.
+* Authentication support.
+* GitHub integration.
+* Repository management APIs.
 
-🔄 Automated Knowledge Pipeline
+### Automated Knowledge Pipeline
 
-* Startup ingestion pipeline
-* Automatic knowledge base initialization
-* Background indexing
-* Persistent vector knowledge storage
+* Startup ingestion pipeline.
+* Automatic knowledge base initialization.
+* Background indexing.
+* Persistent vector knowledge storage.
 
-⸻
+---
 
-🏗️ Architecture
+## Architecture
 
-                    GitHub Repository
-                            │
-                            ▼
-                  Pull Request Detector
-                            │
-      ┌─────────────────────┴─────────────────────┐
-      ▼                                           ▼
-Feature Extraction                      Repository Metadata
-      │                                           │
-      └─────────────────────┬─────────────────────┘
-                            ▼
-                  Feature Engineering
-                            │
-                            ▼
-               XGBoost Risk Prediction Model
-                            │
-                            ▼
-                Probability Calibration
-                            │
-                            ▼
-                    Risk Score (0-100)
-                            │
-                            ▼
-                  RAG Knowledge Retrieval
-                            │
-                            ▼
-                 LLM Risk Explanation
-                            │
-                            ▼
-                  FastAPI REST Response
+```text
+GitHub Pull Request
+        |
+        v
+FastAPI API layer
+        |
+        v
+GitHub client + PR detector
+        |
+        +--> Pull request metadata
+        +--> Commit and file-change features
+        +--> Repository context
+        |
+        v
+Risk pipeline
+        |
+        +--> Feature engineering
+        +--> XGBoost risk prediction
+        +--> Probability calibration
+        +--> Risk score from 0 to 100
+        |
+        v
+RAG knowledge retrieval
+        |
+        v
+LLM-generated risk explanation
+        |
+        v
+Structured FastAPI response
+```
 
-⸻
+The backend receives repository and pull request data through FastAPI, enriches it with GitHub metadata, scores deployment risk with the ML pipeline, retrieves relevant repository knowledge through RAG, and returns a structured response with both a numeric risk score and contextual explanation.
 
-📂 Project Structure
+---
 
-VanGuard/
-│
-├── main.py                     # FastAPI application entrypoint
-├── requirements.txt
-├── .env.example
-│
-├── app/
-│   ├── auth.py
-│   ├── config.py
-│   ├── firebase.py
-│   ├── pr_detector.py          # PR feature extraction
-│   ├── risk_pipeline.py        # End-to-end risk pipeline
-│   ├── schemas.py
-│   ├── utils.py
-│   │
-│   ├── github/
-│   │   ├── auth.py
-│   │   └── client.py
-│   │
-│   ├── routers/
-│   │   ├── github.py
-│   │   ├── repos.py
-│   │   └── users.py
-│   │
-│   ├── RAG/
-│   │   ├── agent.py
-│   │   ├── ingest.py
-│   │   ├── schemas.py
-│   │   ├── tools.py
-│   │   └── knowledge_base/
-│   │
-│   └── HPE-Model/
-│       ├── app.py
-│       ├── model_card.md
-│       ├── models/
-│       ├── apachejit_total.csv
-│       └── README.md
-│
-└── tests/
-    └── test_risk_pipeline.py
+## Project Structure
 
-⸻
+```text
+DeployIQ-backend/
+|-- main.py                     # FastAPI application entrypoint
+|-- requirements.txt            # Python dependencies
+|-- .env.example                # Environment variable template
+|-- app/
+|   |-- auth.py                 # Authentication helpers
+|   |-- config.py               # Environment and app configuration
+|   |-- firebase.py             # Firebase/Firestore setup
+|   |-- pr_detector.py          # Pull request feature extraction
+|   |-- risk_pipeline.py        # End-to-end risk scoring and explanation flow
+|   |-- schemas.py              # Shared Pydantic schemas
+|   |-- utils.py                # Shared utility helpers
+|   |-- github/
+|   |   |-- auth.py             # GitHub App authentication
+|   |   `-- client.py           # GitHub API client
+|   |-- routers/
+|   |   |-- github.py           # GitHub integration endpoints
+|   |   |-- repos.py            # Repository endpoints
+|   |   `-- users.py            # User endpoints
+|   |-- RAG/
+|   |   |-- agent.py            # RAG agent orchestration
+|   |   |-- ingest.py           # Knowledge ingestion
+|   |   |-- schemas.py          # RAG-specific schemas
+|   |   |-- tools.py            # Retrieval and LLM tools
+|   |   `-- knowledge_base/     # Local vector/knowledge artifacts
+|   `-- HPE-Model/
+|       |-- app.py              # Model serving/helpers
+|       |-- model_card.md       # Model documentation
+|       |-- models/             # Trained model artifacts
+|       |-- apachejit_total.csv # Dataset snapshot
+|       `-- README.md           # Model-specific notes
+`-- tests/
+    `-- test_risk_pipeline.py   # Risk pipeline tests
+```
 
-🧠 Risk Prediction Pipeline
+---
 
-1. Fetch Pull Request metadata from GitHub.
+## Risk Prediction Pipeline
+
+1. Fetch pull request metadata from GitHub.
 2. Extract repository, commit, and code-change features.
 3. Generate engineered ML features.
 4. Predict deployment risk using the trained XGBoost model.
@@ -134,172 +131,201 @@ VanGuard/
 7. Generate contextual explanations with the LLM.
 8. Return structured deployment insights through the API.
 
-⸻
+---
 
-🛠️ Technology Stack
+## Technology Stack
 
-Category	Technologies
-Backend	FastAPI, Uvicorn
-Language	Python
-Machine Learning	XGBoost, Scikit-learn
-AI	LLM, Retrieval-Augmented Generation (RAG)
-GitHub Integration	GitHub REST API
-Data Processing	Pandas, NumPy
-Validation	Pydantic
-Testing	Pytest
+| Category | Technologies |
+| --- | --- |
+| Backend | FastAPI, Uvicorn |
+| Language | Python |
+| Machine Learning | XGBoost, Scikit-learn |
+| AI | LLM, Retrieval-Augmented Generation (RAG) |
+| GitHub Integration | GitHub REST API |
+| Data Processing | Pandas, NumPy |
+| Validation | Pydantic |
+| Testing | Pytest |
 
-⸻
+---
 
-🚀 Getting Started
+## Getting Started
 
-1. Clone the Repository
+### 1. Clone the repository
 
-git clone https://github.com/<your-username>/VanGuard.git
-cd VanGuard
+```bash
+git clone https://github.com/<your-username>/DeployIQ.git
+cd DeployIQ/DeployIQ-backend
+```
 
-⸻
+If you already have the repository locally, run the remaining commands from `DeployIQ-backend/`.
 
-2. Create a Virtual Environment
+### 2. Create a virtual environment
 
+```bash
 python -m venv .venv
+```
 
-macOS / Linux
+Activate it on macOS or Linux:
 
+```bash
 source .venv/bin/activate
+```
 
-Windows
+Activate it on Windows PowerShell:
 
-.venv\Scripts\activate
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
 
-⸻
+### 3. Install dependencies
 
-3. Install Dependencies
-
+```bash
 pip install -r requirements.txt
+```
 
-⸻
+### 4. Configure environment variables
 
-4. Configure Environment Variables
-
+```bash
 cp .env.example .env
+```
 
-Update the .env file with the required credentials.
+Update `.env` with the credentials needed by your local setup:
 
-⸻
+| Variable | Purpose |
+| --- | --- |
+| `FIREBASE_SERVICE_ACCOUNT_FILE` | Path to the Firebase service account JSON file. |
+| `FIRESTORE_DATABASE_ID` | Firestore database ID. |
+| `GITHUB_APP_ID` | GitHub App ID. |
+| `GITHUB_CLIENT_ID` | GitHub OAuth client ID. |
+| `GITHUB_PRIVATE_KEY_PATH` | Path to the GitHub App private key. |
+| `GITHUB_WEBHOOK_SECRET` | Secret used to validate GitHub webhooks. |
+| `GITHUB_APP_SLUG` | GitHub App slug. |
+| `FRONTEND_URL` | Frontend origin allowed by CORS. |
+| `GITHUB_TOKEN` | GitHub token for API access when needed. |
+| `GEMINI_API_KEY` | Gemini API key for LLM features. |
+| `GROQ_API_KEY` | Groq API key for LLM features. |
 
-5. Run the Server
+### 5. Run the backend server
 
+```bash
 python main.py
+```
 
-or
+You can also run it directly with Uvicorn:
 
+```bash
 uvicorn main:app --reload
+```
 
-The API will be available at:
+The API will be available at `http://localhost:8000`.
 
-http://localhost:8000
+Interactive API documentation is available at `http://localhost:8000/docs`.
 
-Interactive API documentation:
+---
 
-http://localhost:8000/docs
+## Running Tests
 
-⸻
-
-🧪 Running Tests
-
+```bash
 pytest
+```
 
-⸻
+---
 
-🤖 Machine Learning Model
+## Machine Learning Model
 
-The repository contains a production-ready deployment risk prediction model.
+The repository contains a deployment risk prediction model.
 
 Model artifacts include:
 
-* XGBoost model
-* Probability calibrator
-* Feature schema
-* Evaluation metrics
-* Model card
-* Training notebook
-* Dataset snapshot
+* XGBoost model.
+* Probability calibrator.
+* Feature schema.
+* Evaluation metrics.
+* Model card.
+* Training notebook.
+* Dataset snapshot.
 
-The model predicts deployment risk using engineered features extracted from GitHub Pull Requests and historical repository activity.
+The model predicts deployment risk using engineered features extracted from GitHub pull requests and historical repository activity.
 
-⸻
+---
 
-📚 Retrieval-Augmented Generation
+## Retrieval-Augmented Generation
 
-VanGuard uses a Retrieval-Augmented Generation (RAG) pipeline to provide repository-aware insights.
+DeployIQ uses a RAG pipeline to provide repository-aware insights.
 
 Capabilities include:
 
-* Documentation ingestion
-* Knowledge indexing
-* Semantic retrieval
-* Context-aware reasoning
-* LLM-powered explanations
+* Documentation ingestion.
+* Knowledge indexing.
+* Semantic retrieval.
+* Context-aware reasoning.
+* LLM-powered explanations.
 
 The knowledge base is automatically initialized during application startup.
 
-⸻
+---
 
-🔌 API Overview
+## API Overview
 
 The FastAPI backend exposes endpoints for:
 
-* GitHub repository management
-* Pull Request analysis
-* User management
-* Repository information
-* Risk prediction
-* AI-powered deployment insights
+* GitHub repository management.
+* Pull request analysis.
+* User management.
+* Repository information.
+* Risk prediction.
+* AI-powered deployment insights.
 
 Interactive documentation is available through Swagger UI after starting the server.
 
-⸻
+---
 
-📈 Future Improvements
+## Future Improvements
 
-* GitHub Webhook Integration
-* Real-time Deployment Monitoring
-* Kubernetes Deployment Support
-* CI/CD Pipeline Integration
-* Multi-Repository Analytics
-* Dashboard & Visualization
-* Model Retraining Pipeline
-* Explainable AI Dashboard
+* GitHub webhook integration.
+* Real-time deployment monitoring.
+* Kubernetes deployment support.
+* CI/CD pipeline integration.
+* Multi-repository analytics.
+* Dashboard and visualization.
+* Model retraining pipeline.
+* Explainable AI dashboard.
 
-⸻
+---
 
-🤝 Contributing
+## Contributing
 
 Contributions are welcome.
 
 1. Fork the repository.
 2. Create a feature branch.
 
+```bash
 git checkout -b feature/my-feature
+```
 
 3. Commit your changes.
 
+```bash
 git commit -m "Add new feature"
+```
 
 4. Push your branch.
 
+```bash
 git push origin feature/my-feature
+```
 
-5. Open a Pull Request.
+5. Open a pull request.
 
-⸻
+---
 
-📄 License
+## License
 
-This project currently does not include a license. Add an appropriate LICENSE file if you intend to distribute or open-source the project.
+This project currently does not include a license. Add an appropriate `LICENSE` file if you intend to distribute or open-source the project.
 
-⸻
+---
 
-👨‍💻 Authors
+## Authors
 
-Developed as part of VanGuard, an AI-powered deployment intelligence platform that combines Machine Learning, GitHub analytics, Retrieval-Augmented Generation, and Large Language Models to improve deployment reliability.
+Developed as part of DeployIQ, an AI-powered deployment intelligence platform that combines machine learning, GitHub analytics, retrieval-augmented generation, and large language models to improve deployment reliability.
