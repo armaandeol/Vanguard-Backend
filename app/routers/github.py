@@ -3,6 +3,7 @@ import hmac
 import logging
 import secrets
 
+import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from firebase_admin import firestore as firebase_firestore
@@ -72,12 +73,30 @@ async def list_installations(decoded_token: dict = Depends(get_current_user)):
         .where(filter=FieldFilter("firebaseUserId", "==", decoded_token["uid"]))
         .stream()
     )
-    return [doc.to_dict() for doc in docs]
+
+    # The uninstall webhook should already clean these up, but webhook delivery
+    # isn't guaranteed (tunnel down, missed event, etc.), so double-check live
+    # against GitHub and self-heal any installation that's actually gone.
+    valid_installations = []
+    for doc in docs:
+        installation_id = doc.id
+        try:
+            await get_installation_token(installation_id)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code in (404, 401):
+                logger.info("Installation %s no longer valid on GitHub, removing", installation_id)
+                doc.reference.delete()
+                continue
+            raise
+        valid_installations.append(doc.to_dict())
+
+    return valid_installations
 
 
 @router.post("/webhooks/github")
 async def github_webhook(
     request: Request,
+    background_tasks: BackgroundTasks,
     x_github_event: str = Header(...),
     x_hub_signature_256: str = Header(...),
 ):
@@ -113,6 +132,10 @@ async def github_webhook(
         if installation_id:
             db.collection("installations").document(installation_id).delete()
             logger.info("GitHub installation %s uninstalled, removed from Firestore", installation_id)
+    elif x_github_event == "installation_repositories" and payload.get("action") in ("added", "removed"):
+        installation_id = str(payload.get("installation", {}).get("id", ""))
+        if installation_id:
+            background_tasks.add_task(sync_installation_repositories, installation_id, payload)
 
     return {"received": True}
 
@@ -178,6 +201,36 @@ def _store_repo(*, installation_id: str, repo: dict) -> None:
     )
 
 
+async def _backfill_repo(token: str, installation_id: str, repo: dict) -> None:
+    full_name = repo["full_name"]
+    _store_repo(installation_id=installation_id, repo=repo)
+
+    try:
+        commits = await list_repo_commits(token, repo["owner"]["login"], repo["name"])
+    except Exception:
+        logger.exception("Failed to backfill commits for %s", full_name)
+        commits = []
+
+    for commit in commits:
+        author_info = commit.get("commit", {}).get("author", {})
+        _store_commit(
+            sha=commit.get("sha"),
+            author=author_info.get("name"),
+            timestamp=author_info.get("date"),
+            repo=full_name,
+            event="backfill",
+        )
+
+    try:
+        pulls = await list_repo_pulls(token, repo["owner"]["login"], repo["name"])
+    except Exception:
+        logger.exception("Failed to backfill pull requests for %s", full_name)
+        return
+
+    for pr in pulls:
+        _store_pull_request(pr=pr, repo=full_name)
+
+
 async def backfill_installation_commits(installation_id: str) -> None:
     installation_ref = db.collection("installations").document(installation_id)
     installation_ref.set({"syncStatus": "syncing"}, merge=True)
@@ -187,33 +240,7 @@ async def backfill_installation_commits(installation_id: str) -> None:
         repos = await list_installation_repositories(token)
 
         for repo in repos:
-            full_name = repo["full_name"]
-            _store_repo(installation_id=installation_id, repo=repo)
-
-            try:
-                commits = await list_repo_commits(token, repo["owner"]["login"], repo["name"])
-            except Exception:
-                logger.exception("Failed to backfill commits for %s", full_name)
-                commits = []
-
-            for commit in commits:
-                author_info = commit.get("commit", {}).get("author", {})
-                _store_commit(
-                    sha=commit.get("sha"),
-                    author=author_info.get("name"),
-                    timestamp=author_info.get("date"),
-                    repo=full_name,
-                    event="backfill",
-                )
-
-            try:
-                pulls = await list_repo_pulls(token, repo["owner"]["login"], repo["name"])
-            except Exception:
-                logger.exception("Failed to backfill pull requests for %s", full_name)
-                continue
-
-            for pr in pulls:
-                _store_pull_request(pr=pr, repo=full_name)
+            await _backfill_repo(token, installation_id, repo)
     except Exception:
         logger.exception("Backfill failed for installation %s", installation_id)
         installation_ref.set({"syncStatus": "failed"}, merge=True)
@@ -222,3 +249,37 @@ async def backfill_installation_commits(installation_id: str) -> None:
     installation_ref.set(
         {"syncStatus": "completed", "syncedAt": firebase_firestore.SERVER_TIMESTAMP}, merge=True
     )
+
+
+async def sync_installation_repositories(installation_id: str, payload: dict) -> None:
+    """Handle repos being added/removed from an existing installation via GitHub's
+    'Configure' UI - keep Firestore's repos collection in sync with what's actually
+    granted, instead of only ever growing on initial connect."""
+    action = payload.get("action")
+
+    try:
+        token = await get_installation_token(installation_id)
+    except Exception:
+        logger.exception("Failed to get installation token for %s during repo sync", installation_id)
+        return
+
+    if action == "added":
+        added_full_names = {r["full_name"] for r in payload.get("repositories_added", [])}
+        if not added_full_names:
+            return
+        try:
+            all_repos = await list_installation_repositories(token)
+        except Exception:
+            logger.exception("Failed to list repos for installation %s", installation_id)
+            return
+        for repo in all_repos:
+            if repo["full_name"] in added_full_names:
+                await _backfill_repo(token, installation_id, repo)
+
+    elif action == "removed":
+        for minimal_repo in payload.get("repositories_removed", []):
+            full_name = minimal_repo.get("full_name")
+            if not full_name:
+                continue
+            db.collection("repos").document(sanitize_doc_id(full_name)).delete()
+            logger.info("Repo %s removed from installation %s, deleted from Firestore", full_name, installation_id)
