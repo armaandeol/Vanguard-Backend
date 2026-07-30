@@ -1,6 +1,6 @@
-# DeployIQ Backend
+# VanGuard Backend
 
-DeployIQ is an AI-powered pull request risk analysis backend. It predicts deployment risk for GitHub pull requests using machine learning, retrieval-augmented generation (RAG), and LLM-powered explanations. The backend helps engineering teams identify risky code changes before deployment by combining pull request metadata, repository knowledge, and predictive models.
+VanGuard is an AI-powered pull request risk analysis backend. It predicts deployment risk for GitHub pull requests using machine learning, retrieval-augmented generation (RAG), and LLM-powered explanations. The backend helps engineering teams identify risky code changes before deployment by combining pull request metadata, repository knowledge, and predictive models.
 
 ---
 
@@ -83,7 +83,7 @@ The backend receives repository and pull request data through FastAPI, enriches 
 ## Project Structure
 
 ```text
-DeployIQ-backend/
+VanGuard-backend/
 |-- main.py                     # FastAPI application entrypoint
 |-- requirements.txt            # Python dependencies
 |-- .env.example                # Environment variable template
@@ -153,11 +153,11 @@ DeployIQ-backend/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/DeployIQ.git
-cd DeployIQ/DeployIQ-backend
+git clone https://github.com/<your-username>/VanGuard.git
+cd DeployIQ/VanGuard-backend
 ```
 
-If you already have the repository locally, run the remaining commands from `DeployIQ-backend/`.
+If you already have the repository locally, run the remaining commands from `VanGuard-backend/`.
 
 ### 2. Create a virtual environment
 
@@ -251,7 +251,7 @@ The model predicts deployment risk using engineered features extracted from GitH
 
 ## Retrieval-Augmented Generation
 
-DeployIQ uses a RAG pipeline to provide repository-aware insights.
+VanGuard uses a RAG pipeline to provide repository-aware insights.
 
 Capabilities include:
 
@@ -328,4 +328,4 @@ This project currently does not include a license. Add an appropriate `LICENSE` 
 
 ## Authors
 
-Developed as part of DeployIQ, an AI-powered deployment intelligence platform that combines machine learning, GitHub analytics, retrieval-augmented generation, and large language models to improve deployment reliability.
+Developed as part of VanGuard, an AI-powered deployment intelligence platform that combines machine learning, GitHub analytics, retrieval-augmented generation, and large language models to improve deployment reliability.
